@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CareLink</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5fb;--card:#ffffff;--ink:#1b2340;--mute:#5d6788;--line:#dde2f0;
+  --done:#1f9d5c;--due:#c98a0a;--overdue:#e0661f;--urgent:#d42a40;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12172b;--card:#1b2240;--ink:#eef1fb;--mute:#a4adcb;--line:#2b3457;
+  --done:#4fd48a;--due:#f2b84b;--overdue:#ff8a4c;--urgent:#ff5468;}}
+:root[data-theme="dark"]{--bg:#12172b;--card:#1b2240;--ink:#eef1fb;--mute:#a4adcb;--line:#2b3457;
+  --done:#4fd48a;--due:#f2b84b;--overdue:#ff8a4c;--urgent:#ff5468;}
+*{--none:var(--line)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:17px;line-height:1.45}
+main{max-width:440px;margin:0 auto;padding:18px 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1{font-size:26px;font-weight:800;margin:0;letter-spacing:.2px}
+h2{font-size:17px;font-weight:800;margin:0 0 10px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--due);outline-offset:2px}
+.snd{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 14px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.status{border:2px solid var(--wc);transition:border-color .3s}
+.status[data-worst=due]{animation:cardglow 3s ease-in-out infinite}
+.status[data-worst=overdue]{animation:cardglow 1.5s ease-in-out infinite}
+.status[data-worst=urgent]{animation:cardglow .6s ease-in-out infinite}
+.status[data-worst=done]{box-shadow:0 0 14px -2px var(--wc)}
+@keyframes cardglow{0%,100%{box-shadow:0 0 6px -2px var(--wc)}50%{box-shadow:0 0 26px 2px var(--wc)}}
+.summary{color:var(--mute);margin:-4px 0 12px;font-weight:600}
+.row{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:12px 2px;text-align:left}
+.row:first-of-type{border-top:0}
+.orb{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:#fff;flex:none}
+.orb svg{width:20px;height:20px}
+.row[data-s=done] .orb{box-shadow:0 0 10px var(--c)}
+.row[data-s=due] .orb{animation:pulse 3s ease-in-out infinite}
+.row[data-s=overdue] .orb{animation:pulse 1.5s ease-in-out infinite}
+.row[data-s=urgent] .orb{animation:pulse .6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 4px 0 var(--c)}50%{box-shadow:0 0 20px 7px var(--c)}}
+.name{flex:1;font-weight:600}
+.lbl{font-weight:800;color:var(--c)}
+.banner{display:none;margin:12px 0 0;padding:12px;border-radius:12px;background:var(--urgent);color:#fff;font-weight:800}
+.banner.on{display:block}
+.banner button{display:block;margin-top:8px;background:#fff;color:#8a1020;border:0;border-radius:10px;padding:8px 14px;font-weight:800}
+.note{margin:12px 0 0;color:var(--mute);font-weight:600}
+.appt{display:flex;align-items:center;gap:12px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-weight:600}
+.chip.hit{border-color:var(--overdue);color:var(--overdue)}
+.demo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.demo button{border:2px solid var(--c);background:none;border-radius:12px;padding:10px;font-weight:800;color:var(--c)}
+.demo button:active{background:var(--c);color:#fff}
+.hint{color:var(--mute);margin:10px 0 0;font-size:15px}
+ul{list-style:none;margin:0;padding:0}
+li{padding:6px 0;border-top:1px solid var(--line);font-size:16px}
+li:first-child{border-top:0}
+li time{color:var(--mute);margin-right:8px;font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px;font-weight:800}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.momview{display:none;text-align:center}
+.big{width:100%;padding:30px 16px;border:0;border-radius:22px;background:var(--done);color:#fff;font-size:28px;font-weight:800;box-shadow:0 0 24px var(--done)}
+.big:active{transform:scale(.98)}
+.okmsg{margin:12px 0 0;font-weight:700}
+body[data-view=mom] .momview{display:block}
+body[data-view=mom] .famonly,body[data-view=mom] .banner,body[data-view=mom] .note{display:none!important}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.day b{display:block;font-size:14px;color:var(--mute);font-weight:600;margin-bottom:8px}
+.day.today b{color:var(--ink);font-weight:800}
+.dots{display:flex;flex-direction:column;gap:5px;align-items:center}
+.dots i{width:16px;height:16px;border-radius:50%;background:var(--c)}
+.day.today .dots{outline:2px solid var(--line);outline-offset:4px;border-radius:14px}
+.set{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-weight:600}
+.set:first-of-type{border-top:0}
+.set input[type=time]{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.set input[type=checkbox]{width:22px;height:22px;accent-color:var(--done)}
+@media (prefers-reduced-motion:reduce){.status,.orb{animation:none!important}
+  .status[data-worst]:not([data-worst=done]){box-shadow:0 0 18px 2px var(--wc)}
+  .row:not([data-s=done]) .orb{box-shadow:0 0 14px 4px var(--c)}}
+</style>
+</head>
+<body data-view="fam">
+<main>
+  <header>
+    <h1>CareLink</h1>
+    <button class="snd" id="snd" aria-pressed="true">Sound on</button>
+  </header>
+
+  <div class="tabs" role="group" aria-label="Choose view">
+    <button id="tabFam" aria-pressed="true">Family view</button>
+    <button id="tabMom" aria-pressed="false">Mom's view</button>
+  </div>
+
+  <p class="hint" id="dbnote"></p>
+
+  <section class="card status" id="card" data-worst="due">
+    <h2 id="ttl">Mom's status</h2>
+    <p class="summary" id="summary"></p>
+    <div id="rows"></div>
+    <div class="banner" id="banner" role="alert">Urgent: Evening check-in missed. Everyone is being alerted.
+      <button id="silence">Silence alarm</button></div>
+    <p class="note" id="notified"></p>
+  </section>
+
+  <section class="card momview">
+    <h2>Hello, Mom</h2>
+    <button class="big" id="okay">I'm okay</button>
+    <p class="okmsg" id="okmsg"></p>
+  </section>
+
+  <section class="card">
+    <h2>Next appointment</h2>
+    <div class="appt">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      Friday, 10:30 AM
+    </div>
+  </section>
+
+  <section class="card famonly">
+    <h2>This week</h2>
+    <p class="summary" id="weekSum"></p>
+    <div class="week" id="week"></div>
+    <p class="hint">Each column is a day, with one dot per task: green done, amber, orange or red not finished, grey no record.</p>
+  </section>
+
+  <section class="card famonly">
+    <h2>Quiet hours</h2>
+    <label class="set">Silence non-urgent alerts <input type="checkbox" id="qOn" checked></label>
+    <label class="set">From <input type="time" id="qStart" value="22:00"></label>
+    <label class="set">Until <input type="time" id="qEnd" value="07:00"></label>
+    <label class="set">Test now as if it's night <input type="checkbox" id="qTest"></label>
+    <p class="hint">In quiet hours, Due and Overdue only glow. Urgent always vibrates and sounds.</p>
+  </section>
+
+  <section class="card famonly">
+    <h2>Family members</h2>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card famonly">
+    <h2>Try the alerts</h2>
+    <div class="demo">
+      <button style="--c:var(--due)" data-set="due">Due</button>
+      <button style="--c:var(--overdue)" data-set="overdue">Overdue</button>
+      <button style="--c:var(--urgent)" data-set="urgent">Urgent</button>
+      <button style="--c:var(--done)" data-set="done">Done</button>
+    </div>
+    <p class="hint">These change the Evening check-in. You can also tap any task to mark it done. Vibration works on most Android phones; iPhones only get the sound and glow.</p>
+  </section>
+
+  <section class="card famonly">
+    <h2>Today</h2>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script>
+const ICON={
+  done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  due:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>',
+  overdue:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17h12l-1.6-2.2V10a4.4 4.4 0 0 0-8.8 0v4.8L6 17zM10 20h4"/></svg>',
+  urgent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 4v10M12 19v.5"/></svg>'
+};
+const LABEL={done:'Done',due:'Due',overdue:'Overdue',urgent:'Urgent'};
+const RANK={done:0,due:1,overdue:2,urgent:3};
+const items=[
+  {id:0,name:'Morning check-in',s:'done'},
+  {id:1,name:'Medication',s:'done'},
+  {id:2,name:'Breakfast',s:'done'},
+  {id:3,name:'Evening check-in',s:'due'}
+];
+const family=['Hasrith','Sister','Brother'];
+let soundOn=true, ctx=null, alarm=null, silenced=false;
+const $=id=>document.getElementById(id);
+
+function now(){return new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}
+let logs=[];
+function drawLog(){$('log').replaceChildren(...logs.map(l=>{const li=document.createElement('li'),t=document.createElement('time');t.textContent=l.t;li.append(t,l.m);return li}))}
+function log(m){logs.unshift({t:now(),m});logs=logs.slice(0,30);drawLog()}
+
+function tone(f,dur,type,gain,delay){
+  if(!soundOn)return;
+  try{
+    ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==='suspended')ctx.resume();
+    const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+(delay||0);
+    o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(gain,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+
+function quiet(){
+  if(!$('qOn').checked)return false;
+  if($('qTest').checked)return true;
+  const m=x=>{const [h,n]=x.split(':');return +h*60+ +n};
+  const d=new Date(),c=d.getHours()*60+d.getMinutes(),a=m($('qStart').value),b=m($('qEnd').value);
+  return a<=b?(c>=a&&c<b):(c>=a||c<b);
+}
+function feedback(s){
+  stopAlarm();
+  if(s!=='urgent'&&quiet()){if(s!=='done')log('Quiet hours: '+LABEL[s]+' shown with glow only');return}
+  if(s==='done'){buzz(0);tone(660,.14,'sine',.08,0);tone(880,.2,'sine',.08,.12)}
+  else if(s==='due'){buzz(80)}
+  else if(s==='overdue'){buzz([120,120,120]);[784,988,1175].forEach((f,i)=>tone(f,.4,'sine',.1,i*.16))}
+  else if(s==='urgent'){silenced=false;startAlarm()}
+}
+function startAlarm(){
+  const beat=()=>{buzz([600,200,600]);tone(880,.3,'square',.14,0);tone(660,.3,'square',.14,.35)};
+  beat();alarm=setInterval(beat,1400);
+}
+function stopAlarm(){if(alarm){clearInterval(alarm);alarm=null}buzz(0)}
+
+function setStatus(id,s,who){
+  const it=items[id];if(it.s===s)return;
+  it.s=s;
+  if(s==='done')log(it.name+' marked done by '+(who||'you'));
+  else log(it.name+' is now '+LABEL[s].toLowerCase());
+  feedback(s);render();save();
+}
+
+function render(){
+  $('rows').innerHTML=items.map(it=>
+    '<button class="row" data-id="'+it.id+'" data-s="'+it.s+'" style="--c:var(--'+it.s+')" aria-label="'+it.name+', '+LABEL[it.s]+'. Tap to mark done.">'+
+    '<span class="orb">'+ICON[it.s]+'</span><span class="name">'+it.name+'</span><span class="lbl">'+LABEL[it.s]+'</span></button>').join('');
+  const worst=items.reduce((w,it)=>RANK[it.s]>RANK[w]?it.s:w,'done');
+  const c=$('card');c.dataset.worst=worst;c.style.setProperty('--wc','var(--'+worst+')');
+  const open=items.filter(i=>i.s!=='done').length;
+  $('summary').textContent=open?open+' thing'+(open>1?'s':'')+' still to do today':'All done for today';
+  $('banner').classList.toggle('on',worst==='urgent'&&!silenced);
+  const n={done:'Nothing needs you right now.',due:'Waiting on Mom. No one has been alerted yet.',
+    overdue:'Hasrith has been notified.',urgent:silenced?'Alarm silenced by you. Please call Mom.':'Hasrith, your sister and your brother are being alerted.'};
+  $('notified').textContent=n[worst];
+  renderWeek();
+  const mom=document.body.dataset.view==='mom';
+  $('ttl').textContent=mom?'Your day':"Mom's status";
+  $('okmsg').textContent=items[3].s==='done'?"Thank you, Mom. Your family knows you're okay.":'Tap the big button when you have checked in.';
+  $('chips').innerHTML=family.map((f,i)=>{
+    const hit=(worst==='overdue'&&i===0)||worst==='urgent';
+    return '<span class="chip'+(hit?' hit':'')+'">'+f+(hit?' (alerted)':'')+'</span>'}).join('');
+}
+
+let hist={};
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function renderWeek(){
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d)}
+  let missed=0,known=0;
+  $('week').innerHTML=days.map((d,i)=>{
+    const t=i===6,h=hist[key(d)],st=t?items.map(x=>x.s):(h||['none','none','none','none']);
+    if(!t&&h){known++;missed+=st.filter(x=>x!=='done').length}
+    const nm=d.toLocaleDateString([], {weekday:'short'});
+    return '<div class="day'+(t?' today':'')+'"><b>'+nm+'</b><div class="dots" aria-label="'+nm+': '+st.join(', ')+'">'+
+      st.map(x=>'<i style="--c:var(--'+x+')" title="'+x+'"></i>').join('')+'</div></div>'}).join('');
+  $('weekSum').textContent=!known?'No past days recorded yet. This fills in day by day.':
+    (missed?missed+' unfinished task'+(missed>1?'s':'')+' in the past days':'Every task finished on the days recorded');
+}
+function setView(v){
+  document.body.dataset.view=v;
+  $('tabFam').setAttribute('aria-pressed',v==='fam');$('tabMom').setAttribute('aria-pressed',v==='mom');
+  render();
+}
+$('tabFam').addEventListener('click',()=>setView('fam'));
+$('tabMom').addEventListener('click',()=>setView('mom'));
+$('okay').addEventListener('click',()=>{
+  if(items[3].s==='done'){tone(660,.14,'sine',.08,0);buzz(0);return}
+  setStatus(3,'done','Mom');
+});
+['qOn','qStart','qEnd','qTest'].forEach(id=>$(id).addEventListener('change',()=>{
+  log(quiet()?'Quiet hours are on now':'Quiet hours are off now')}));
+$('rows').addEventListener('click',e=>{
+  const r=e.target.closest('.row');if(!r)return;
+  const id=+r.dataset.id;
+  if(items[id].s==='done')return;
+  setStatus(id,'done');
+});
+document.querySelector('.demo').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  setStatus(3,b.dataset.set);
+});
+$('silence').addEventListener('click',()=>{silenced=true;stopAlarm();log('Alarm silenced by you');render()});
+$('snd').addEventListener('click',()=>{
+  soundOn=!soundOn;$('snd').textContent=soundOn?'Sound on':'Sound off';$('snd').setAttribute('aria-pressed',soundOn);
+  if(!soundOn)stopAlarm();else tone(660,.14,'sine',.08,0);
+});
+
+log('Morning check-in, medication and breakfast done');
+render();
+
+/* Saving and sharing: every viewer with access sees the same live data */
+let db=null,q=Promise.resolve();
+function note(t){$('dbnote').textContent=t}
+function save(){if(!db)return;q=q.then(async()=>{
+  try{const k=key(new Date()),st=items.map(i=>i.s);
+    await db.doc('carelink/today').set({date:k,items:st,logs});
+    await db.doc('carelink/day-'+k).set({s:st});
+  }catch(e){note('Could not save just now. Changes on this screen are not shared.')}})}
+function applyRemote(d){
+  if(!d||!Array.isArray(d.items))return;
+  if(d.date!==key(new Date())){items.forEach(i=>i.s='due');logs=[];log('New day started');save();render();return}
+  let ch=null;
+  d.items.forEach((st,i)=>{if(items[i]&&ST_OK.includes(st)&&items[i].s!==st){items[i].s=st;ch=st}});
+  if(Array.isArray(d.logs)){logs=d.logs.filter(l=>l&&typeof l.m==='string').slice(0,30).map(l=>({t:String(l.t||''),m:l.m}));drawLog()}
+  if(ch)feedback(ch);
+  render();
+}
+const ST_OK=['done','due','overdue','urgent'];
+async function initDb(){
+  let c=null;
+  try{c=window.claude&&await claude.use('db')}catch(e){}
+  if(!c){note('Not saving. Open this page while signed in to claude.ai to save and share.');return}
+  db=c;note('Saved and shared. Everyone with this page open sees changes live.');
+  db.collection('carelink').onSnapshot(snap=>{
+    let hasToday=false;
+    snap.docs.forEach(d=>{
+      if(d.id==='today'){hasToday=true;if(!d.metadata.hasPendingWrites)applyRemote(d.data())}
+      else if(d.id.indexOf('day-')===0){const v=d.data();if(v&&Array.isArray(v.s))hist[d.id.slice(4)]=v.s}
+    });
+    if(!hasToday)save();else render();
+  },()=>note('Could not load saved data. Changes on this screen are not shared.'));
+}
+initDb();
+</script>
+</body>
+</html>
